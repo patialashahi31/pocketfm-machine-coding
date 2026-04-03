@@ -1,0 +1,48 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  rate-limiter-service:
+    build:
+      context: ./rate-limiter-service
+    container_name: rate-limiter-service
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+    ports:
+      - "8001:8001"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  sample-api-service:
+    build:
+      context: ./sample-api-service
+    container_name: sample-api-service
+    environment:
+      RATE_LIMITER_URL: http://rate-limiter-service:8001/v1/rate-limits/check
+    ports:
+      - "8000:8000"
+    depends_on:
+      rate-limiter-service:
+        condition: service_started
+
+  k6:
+    image: grafana/k6:0.49.0
+    container_name: k6
+    entrypoint: ["sh", "-c"]
+    command: ["sleep infinity"]
+    volumes:
+      - ./load-tests:/scripts:ro
+    depends_on:
+      sample-api-service:
+        condition: service_started

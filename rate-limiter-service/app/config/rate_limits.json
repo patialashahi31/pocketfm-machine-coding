@@ -1,0 +1,21 @@
+{
+  "default": {
+    "limit": 10,
+    "window_seconds": 60
+  },
+  "services": {
+    "sample-api-service": {
+      "default": {
+        "limit": 5,
+        "window_seconds": 60
+      },
+      "routes": {
+        "/v1/echo": {
+          "limit": 3,
+          "window_seconds": 60
+        }
+      }
+    }
+  }
+}
+
